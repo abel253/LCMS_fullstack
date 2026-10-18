@@ -1,0 +1,197 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ═══════════════════════════════════════════
+// USERS
+// ═══════════════════════════════════════════
+model User {
+  userId        String   @id @map("user_id") @db.VarChar(20)
+  passwordHash  String   @map("password_hash") @db.VarChar(255)
+  name          String   @db.VarChar(100)
+  email         String   @unique @db.VarChar(100)
+  userType      String   @map("user_type") @db.VarChar(20)
+  department    String?  @db.VarChar(100)
+  status        String   @default("ABLE_TO_BORROW") @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at")
+  emailVerified Boolean  @default(false) @map("email_verified")
+
+  borrowTransactions BorrowTransaction[]
+  reservations       Reservation[]
+  auditLogs          AuditLog[]
+  reports            Report[]
+
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════
+// ITEMS
+// ═══════════════════════════════════════════
+model Item {
+  itemId            Int      @id @default(autoincrement()) @map("item_id")
+  title             String   @db.VarChar(500)
+  author            String?  @db.VarChar(500)
+  isbn              String?  @db.VarChar(20)
+  callNumber        String?  @map("call_number") @db.VarChar(50)
+  publisher         String?  @db.VarChar(200)
+  publicationYear   Int?     @map("publication_year")
+  edition           String?  @db.VarChar(50)
+  shelfNumber       String?  @map("shelf_number") @db.VarChar(20)
+  subjectCategory   String?  @map("subject_category") @db.VarChar(100)
+  location          String?  @db.VarChar(100)
+  barcode           String?  @unique @db.VarChar(50)
+  quantity          Int?     @default(1)
+  availableQuantity Int?     @default(1) @map("available_quantity")
+  itemType          String?  @default("Book") @map("item_type") @db.VarChar(50)
+  status            String   @default("AVAILABLE") @db.VarChar(20)
+  createdAt         DateTime @default(now()) @map("created_at")
+  shelfType         String?  @default("OPEN") @map("shelf_type") @db.VarChar(20)
+  subShelfNumber    String?  @default("N/A") @map("sub_shelf_number") @db.VarChar(50)
+
+  borrowTransactions BorrowTransaction[]
+  reservations       Reservation[]
+
+  @@map("items")
+}
+
+// ═══════════════════════════════════════════
+// BORROW TRANSACTIONS
+// ═══════════════════════════════════════════
+model BorrowTransaction {
+  transactionId Int      @id @default(autoincrement()) @map("transaction_id")
+  userId        String?  @map("user_id") @db.VarChar(20)
+  itemId        Int?     @map("item_id")
+  issueDate     DateTime @map("issue_date") @db.Date
+  dueDate       DateTime @map("due_date") @db.Date
+  returnDate    DateTime? @map("return_date") @db.Date
+  fineAmount    Decimal  @default(0.00) @map("fine_amount") @db.Decimal(10, 2)
+  status        String   @default("REQUESTED") @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user         User?         @relation(fields: [userId], references: [userId])
+  item         Item?         @relation(fields: [itemId], references: [itemId])
+  overdueItems OverdueItem[]
+
+  @@map("borrow_transactions")
+}
+
+// ═══════════════════════════════════════════
+// RESERVATIONS
+// ═══════════════════════════════════════════
+model Reservation {
+  reservationId   Int      @id @default(autoincrement()) @map("reservation_id")
+  userId          String?  @map("user_id") @db.VarChar(20)
+  itemId          Int?     @map("item_id")
+  reservationDate DateTime @map("reservation_date") @db.Date
+  expiryDate      DateTime @map("expiry_date") @db.Date
+  status          String   @default("PENDING") @db.VarChar(20)
+  queuePosition   Int?     @map("queue_position")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [userId])
+  item Item? @relation(fields: [itemId], references: [itemId])
+
+  @@map("reservations")
+}
+
+// ═══════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════
+model AuditLog {
+  logId     Int      @id @default(autoincrement()) @map("log_id")
+  userId    String?  @map("user_id") @db.VarChar(20)
+  action    String?  @db.VarChar(100)
+  tableName String?  @map("table_name") @db.VarChar(50)
+  recordId  Int?     @map("record_id")
+  oldData   Json?    @map("old_data")
+  newData   Json?    @map("new_data")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [userId])
+
+  @@map("audit_log")
+}
+
+// ═══════════════════════════════════════════
+// OVERDUE ITEMS
+// ═══════════════════════════════════════════
+model OverdueItem {
+  overdueId     Int      @id @default(autoincrement()) @map("overdue_id")
+  transactionId Int?     @map("transaction_id")
+  daysOverdue   Int?     @map("days_overdue")
+  fineAmount    Decimal? @map("fine_amount") @db.Decimal(10, 2)
+  emailSent     Boolean  @default(false) @map("email_sent")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  transaction BorrowTransaction? @relation(fields: [transactionId], references: [transactionId])
+
+  @@map("overdue_items")
+}
+
+// ═══════════════════════════════════════════
+// REPORTS
+// ═══════════════════════════════════════════
+model Report {
+  reportId      Int      @id @default(autoincrement()) @map("report_id")
+  reportType    String   @map("report_type") @db.VarChar(50)
+  generatedBy   String?  @map("generated_by") @db.VarChar(20)
+  generatedDate DateTime @default(now()) @map("generated_date")
+  parameters    Json?
+  filePath      String?  @map("file_path") @db.VarChar(500)
+
+  user User? @relation(fields: [generatedBy], references: [userId])
+
+  @@map("reports")
+}
+
+// ═══════════════════════════════════════════
+// RESEARCH
+// ═══════════════════════════════════════════
+model Research {
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  filePath   String   @map("file_path") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+  college    String?  @db.VarChar(100)
+  department String?  @db.VarChar(100)
+
+  @@map("research")
+}
+
+// ═══════════════════════════════════════════
+// CONFIG TABLES
+// ═══════════════════════════════════════════
+model DueDateConfig {
+  dueConfigId    Int      @id @default(autoincrement()) @map("due_config_id")
+  userType       String   @map("user_type") @db.VarChar(20)
+  defaultDueDays Int?     @default(14) @map("default_due_days")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("due_date_config")
+}
+
+model FineConfig {
+  fineId     Int      @id @default(autoincrement()) @map("fine_id")
+  itemType   String   @map("item_type") @db.VarChar(50)
+  finePerDay Decimal? @default(1.00) @map("fine_per_day") @db.Decimal(10, 2)
+  maxFine    Decimal? @default(50.00) @map("max_fine") @db.Decimal(10, 2)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("fine_config")
+}
+
+model SystemConfig {
+  configId    Int      @id @default(autoincrement()) @map("config_id")
+  configKey   String   @unique @map("config_key") @db.VarChar(50)
+  configValue String   @map("config_value") @db.VarChar(100)
+  description String?  @db.Text
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
