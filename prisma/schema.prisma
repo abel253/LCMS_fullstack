@@ -16,7 +16,11 @@ model User {
   passwordHash  String   @map("password_hash") @db.VarChar(255)
   name          String   @db.VarChar(100)
   email         String   @unique @db.VarChar(100)
+<<<<<<< HEAD
   userType      String   @map("user_type") @db.VarChar(20)
+=======
+  userType      String   @map("user_type") @db.VarChar(20) // Student | Faculty | Librarian | Administrator
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
   department    String?  @db.VarChar(100)
   status        String   @default("ABLE_TO_BORROW") @db.VarChar(20)
   createdAt     DateTime @default(now()) @map("created_at")
@@ -49,21 +53,52 @@ model Item {
   quantity          Int?     @default(1)
   availableQuantity Int?     @default(1) @map("available_quantity")
   itemType          String?  @default("Book") @map("item_type") @db.VarChar(50)
+<<<<<<< HEAD
   status            String   @default("AVAILABLE") @db.VarChar(20)
   createdAt         DateTime @default(now()) @map("created_at")
   shelfType         String?  @default("OPEN") @map("shelf_type") @db.VarChar(20)
+=======
+  status            ItemStatus @default(AVAILABLE)
+  createdAt         DateTime @default(now()) @map("created_at")
+  shelfType         ShelfType? @default(OPEN) @map("shelf_type")
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
   subShelfNumber    String?  @default("N/A") @map("sub_shelf_number") @db.VarChar(50)
 
   borrowTransactions BorrowTransaction[]
   reservations       Reservation[]
 
+<<<<<<< HEAD
   @@map("items")
 }
 
+=======
+  @@index([title(100)], name: "idx_items_title")
+  @@index([author(100)], name: "idx_items_author")
+  @@index([isbn], name: "idx_items_isbn")
+  @@index([callNumber], name: "idx_items_call_number")
+  @@index([status], name: "idx_items_status")
+  @@index([subjectCategory], name: "idx_items_subject_category")
+  @@map("items")
+}
+
+enum ItemStatus {
+  AVAILABLE
+  BORROWED
+  LOST
+  RESERVED
+}
+
+enum ShelfType {
+  OPEN
+  CLOSED
+}
+
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 // ═══════════════════════════════════════════
 // BORROW TRANSACTIONS
 // ═══════════════════════════════════════════
 model BorrowTransaction {
+<<<<<<< HEAD
   transactionId Int      @id @default(autoincrement()) @map("transaction_id")
   userId        String?  @map("user_id") @db.VarChar(20)
   itemId        Int?     @map("item_id")
@@ -81,10 +116,42 @@ model BorrowTransaction {
   @@map("borrow_transactions")
 }
 
+=======
+  transactionId Int            @id @default(autoincrement()) @map("transaction_id")
+  userId        String?        @map("user_id") @db.VarChar(20)
+  itemId        Int?           @map("item_id")
+  issueDate     DateTime       @map("issue_date") @db.Date
+  dueDate       DateTime       @map("due_date") @db.Date
+  returnDate    DateTime?      @map("return_date") @db.Date
+  fineAmount    Decimal        @default(0.00) @map("fine_amount") @db.Decimal(10, 2)
+  status        BorrowStatus   @default(REQUESTED)
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  user            User?            @relation(fields: [userId], references: [userId])
+  item            Item?            @relation(fields: [itemId], references: [itemId])
+  overdueItems    OverdueItem[]
+
+  @@index([userId], name: "idx_transactions_user_id")
+  @@index([itemId], name: "idx_transactions_item_id")
+  @@index([status], name: "idx_transactions_status")
+  @@index([issueDate], name: "idx_transactions_issue_date")
+  @@index([dueDate], name: "idx_transactions_due_date")
+  @@map("borrow_transactions")
+}
+
+enum BorrowStatus {
+  REQUESTED
+  ISSUED
+  RETURNED
+  DENIED
+}
+
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 // ═══════════════════════════════════════════
 // RESERVATIONS
 // ═══════════════════════════════════════════
 model Reservation {
+<<<<<<< HEAD
   reservationId   Int      @id @default(autoincrement()) @map("reservation_id")
   userId          String?  @map("user_id") @db.VarChar(20)
   itemId          Int?     @map("item_id")
@@ -93,13 +160,39 @@ model Reservation {
   status          String   @default("PENDING") @db.VarChar(20)
   queuePosition   Int?     @map("queue_position")
   createdAt       DateTime @default(now()) @map("created_at")
+=======
+  reservationId   Int               @id @default(autoincrement()) @map("reservation_id")
+  userId          String?           @map("user_id") @db.VarChar(20)
+  itemId          Int?              @map("item_id")
+  reservationDate DateTime          @map("reservation_date") @db.Date
+  expiryDate      DateTime          @map("expiry_date") @db.Date
+  status          ReservationStatus @default(PENDING)
+  queuePosition   Int?              @map("queue_position")
+  createdAt       DateTime          @default(now()) @map("created_at")
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 
   user User? @relation(fields: [userId], references: [userId])
   item Item? @relation(fields: [itemId], references: [itemId])
 
+<<<<<<< HEAD
   @@map("reservations")
 }
 
+=======
+  @@index([userId], name: "idx_reservations_user_id")
+  @@index([itemId], name: "idx_reservations_item_id")
+  @@index([status], name: "idx_reservations_status")
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  PENDING
+  FULFILLED
+  EXPIRED
+  CANCELLED
+}
+
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 // ═══════════════════════════════════════════
 // AUDIT LOG
 // ═══════════════════════════════════════════
@@ -131,6 +224,11 @@ model OverdueItem {
 
   transaction BorrowTransaction? @relation(fields: [transactionId], references: [transactionId])
 
+<<<<<<< HEAD
+=======
+  @@index([transactionId], name: "idx_overdue_transaction_id")
+  @@index([emailSent], name: "idx_overdue_email_sent")
+>>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
   @@map("overdue_items")
 }
 
