@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 {
-  // https://nuxt.com/docs/guide/concepts/typescript
   "files": [],
   "references": [
     {
@@ -17,8 +15,3 @@
     }
   ]
 }
-=======
-{
-  "extends": "./.nuxt/tsconfig.json"
-}
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9

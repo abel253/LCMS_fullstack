@@ -88,7 +88,7 @@
           <article
             v-for="item in purposeCards"
             :key="item.title"
-            class="rounded-xl border-t-4 border-[#01ACF2] border-x border-b border-[#C8EAF8] bg-[#F5FCFF] p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:p-6"
+            class="rounded-xl border-t-4 border-[#01ACF2] border-x border-b  bg-[#F5FCFF] p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:p-6"
           >
             <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#01ACF2] text-xl text-white sm:h-12 sm:w-12">
               {{ item.icon }}

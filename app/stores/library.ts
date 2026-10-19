@@ -1,20 +1,12 @@
-<<<<<<< HEAD
-// store/library.ts
-import { defineStore } from 'pinia'
-
-export interface LibraryItem {
-=======
 // app/stores/library.ts
 import { defineStore } from 'pinia'
 
-interface LibraryItem {
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
+export interface LibraryItem {
   item_id: number
   title: string
   author: string
   isbn?: string
   call_number?: string
-<<<<<<< HEAD
   publisher?: string
   publication_year?: number | string
   edition?: string
@@ -33,11 +25,6 @@ interface LibraryItem {
   status?: string
   shelf_type?: 'OPEN' | 'CLOSED'
   [key: string]: any
-=======
-  total_copies: number
-  available_copies: number
-  is_available: boolean
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 }
 
 interface GuestInfo {
@@ -45,8 +32,7 @@ interface GuestInfo {
   phone?: string | null
 }
 
-<<<<<<< HEAD
-// store/library.ts
+// ── Helper: Normalize raw API data ──
 function normalizeItem(raw: any): LibraryItem {
   const total = Number(raw.total_copies ?? raw.quantity ?? raw.total_quantity ?? 1)
   const available = Number(raw.available_copies ?? raw.available_quantity ?? raw.availableQuantity ?? total)
@@ -89,8 +75,6 @@ function extractItems(response: any): any[] {
   return []
 }
 
-=======
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 export const useLibraryStore = defineStore('library', {
   state: () => ({
     searchResults: [] as LibraryItem[],
@@ -99,23 +83,17 @@ export const useLibraryStore = defineStore('library', {
   }),
 
   getters: {
-<<<<<<< HEAD
     availableCount: (state): number =>
       state.searchResults.filter((item) => item.is_available).length,
 
     totalCount: (state): number =>
       state.searchResults.length,
-=======
-    availableCount: (state) =>
-      state.searchResults.filter((i) => i.is_available).length,
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
   },
 
   actions: {
     async searchBooks(q = '', type = 'title') {
       this.loading = true
       this.error = null
-<<<<<<< HEAD
 
       try {
         const response: any = await $fetch('/api/items/search', {
@@ -136,16 +114,6 @@ export const useLibraryStore = defineStore('library', {
           error?.message ||
           'Failed to load library items'
 
-=======
-      try {
-        const res: any = await $fetch('/api/items/search', {
-          params: { q, type, limit: 100 },
-        })
-        this.searchResults = Array.isArray(res) ? res : []
-        return this.searchResults
-      } catch (error: any) {
-        this.error = error?.data?.statusMessage || 'Search failed'
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
         this.searchResults = []
         throw error
       } finally {
@@ -153,7 +121,6 @@ export const useLibraryStore = defineStore('library', {
       }
     },
 
-<<<<<<< HEAD
     async requestBook(itemId: number, guest?: GuestInfo) {
       try {
         const response: any = await $fetch('/api/requests', {
@@ -161,21 +128,10 @@ export const useLibraryStore = defineStore('library', {
           body: {
             itemId,
             guestName: guest?.name || 'Student Borrower',
-=======
-    // ✅ ሳይገባ ይሰራል — guest info ይቀበላል
-    async requestBook(itemId: number, guest?: GuestInfo) {
-      try {
-        const res: any = await $fetch('/api/requests', {
-          method: 'POST',
-          body: {
-            itemId,
-            guestName: guest?.name || 'Guest',
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
             guestPhone: guest?.phone || null,
           },
         })
 
-<<<<<<< HEAD
         const item = this.searchResults.find((entry) => entry.item_id === itemId)
         if (item) {
           item.available_copies = Math.max(0, item.available_copies - 1)
@@ -191,21 +147,6 @@ export const useLibraryStore = defineStore('library', {
           error?.message ||
           'Request failed'
         throw new Error(message)
-=======
-        // Local state update
-        const idx = this.searchResults.findIndex((i) => i.item_id === itemId)
-        if (idx !== -1) {
-          this.searchResults[idx].available_copies = Math.max(
-            0,
-            this.searchResults[idx].available_copies - 1,
-          )
-          this.searchResults[idx].is_available =
-            this.searchResults[idx].available_copies > 0
-        }
-        return res
-      } catch (error: any) {
-        throw { message: error?.data?.statusMessage || 'Request failed' }
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
       }
     },
   },

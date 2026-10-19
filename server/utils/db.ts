@@ -1,12 +1,8 @@
 // server/utils/db.ts
 import 'dotenv/config'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
-<<<<<<< HEAD
-import { PrismaClient } from '~/generated/prisma/client'
-=======
-import { PrismaClient } from '~/app/generated/prisma/client'   // ← ✅ አዲስ import
->>>>>>> 446808d0c07d20c161d39a68e37dbdc45c63dad9
 
+import { PrismaClient } from '~/generated/prisma/client'   // ← ✅ አዲስ import
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT) || 3306,
