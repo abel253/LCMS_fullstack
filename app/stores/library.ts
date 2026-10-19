@@ -1,20 +1,78 @@
-// app/stores/library.ts
+// store/library.ts
 import { defineStore } from 'pinia'
 
-interface LibraryItem {
+export interface LibraryItem {
   item_id: number
   title: string
   author: string
   isbn?: string
   call_number?: string
+  publisher?: string
+  publication_year?: number | string
+  edition?: string
+  shelf_number?: string
+  sub_shelf_number?: string
+  subject_category?: string
+  location?: string
+  effective_location?: string
+  barcode?: string
+  quantity?: number
+  available_quantity?: number
   total_copies: number
   available_copies: number
   is_available: boolean
+  item_type?: string
+  status?: string
+  shelf_type?: 'OPEN' | 'CLOSED'
+  [key: string]: any
 }
 
 interface GuestInfo {
   name?: string
   phone?: string | null
+}
+
+// store/library.ts
+function normalizeItem(raw: any): LibraryItem {
+  const total = Number(raw.total_copies ?? raw.quantity ?? raw.total_quantity ?? 1)
+  const available = Number(raw.available_copies ?? raw.available_quantity ?? raw.availableQuantity ?? total)
+  const status = String(raw.status ?? 'AVAILABLE').toUpperCase()
+
+  // ── shelf_type ን በትክክል አንብብ ──
+  const rawShelfType = String(raw.shelf_type ?? '').trim().toUpperCase()
+  const shelfType: 'OPEN' | 'CLOSED' = rawShelfType === 'CLOSED' ? 'CLOSED' : 'OPEN'
+
+  return {
+    ...raw,
+    item_id: Number(raw.item_id ?? raw.id ?? 0),
+    title: String(raw.title ?? ''),
+    author: String(raw.author ?? ''),
+    isbn: String(raw.isbn ?? ''),
+    call_number: String(raw.call_number ?? ''),
+    location: String(raw.location ?? '').trim(),
+    shelf_number: String(raw.shelf_number ?? '').trim(),
+    sub_shelf_number: String(raw.sub_shelf_number ?? 'N/A').trim(),
+    shelf_type: shelfType,
+    total_copies: total,
+    available_copies: available,
+    quantity: total,
+    available_quantity: available,
+    is_available:
+      available > 0 &&
+      status !== 'UNAVAILABLE' &&
+      status !== 'LOST' &&
+      status !== 'BORROWED' &&
+      status !== 'WITHDRAWN',
+  }
+}
+
+function extractItems(response: any): any[] {
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(response?.items)) return response.items
+  if (Array.isArray(response?.results)) return response.results
+  if (Array.isArray(response?.data?.items)) return response.data.items
+  return []
 }
 
 export const useLibraryStore = defineStore('library', {
@@ -26,21 +84,36 @@ export const useLibraryStore = defineStore('library', {
 
   getters: {
     availableCount: (state): number =>
-      state.searchResults.filter((i) => i.is_available).length,
+      state.searchResults.filter((item) => item.is_available).length,
+
+    totalCount: (state): number =>
+      state.searchResults.length,
   },
 
   actions: {
     async searchBooks(q = '', type = 'title') {
       this.loading = true
       this.error = null
+
       try {
-        const res: any = await $fetch('/api/items/search', {
-          params: { q, type, limit: 10000 },
+        const response: any = await $fetch('/api/items/search', {
+          params: {
+            q: q.trim(),
+            type,
+            limit: 10000,
+          },
         })
-        this.searchResults = Array.isArray(res) ? res : []
+
+        const items = extractItems(response)
+        this.searchResults = items.map(normalizeItem)
         return this.searchResults
       } catch (error: any) {
-        this.error = error?.data?.statusMessage || 'Search failed'
+        this.error =
+          error?.data?.message ||
+          error?.data?.statusMessage ||
+          error?.message ||
+          'Failed to load library items'
+
         this.searchResults = []
         throw error
       } finally {
@@ -50,27 +123,30 @@ export const useLibraryStore = defineStore('library', {
 
     async requestBook(itemId: number, guest?: GuestInfo) {
       try {
-        const res: any = await $fetch('/api/requests', {
+        const response: any = await $fetch('/api/requests', {
           method: 'POST',
           body: {
             itemId,
-            guestName: guest?.name || 'Guest',
+            guestName: guest?.name || 'Student Borrower',
             guestPhone: guest?.phone || null,
           },
         })
 
-        // ✅ የተስተካከለ — TypeScript safe
-        const idx = this.searchResults.findIndex((i) => i.item_id === itemId)
-        if (idx !== -1) {
-          const item = this.searchResults[idx]
-          if (item) {
-            item.available_copies = Math.max(0, item.available_copies - 1)
-            item.is_available = item.available_copies > 0
-          }
+        const item = this.searchResults.find((entry) => entry.item_id === itemId)
+        if (item) {
+          item.available_copies = Math.max(0, item.available_copies - 1)
+          item.available_quantity = item.available_copies
+          item.is_available = item.available_copies > 0
         }
-        return res
+
+        return response
       } catch (error: any) {
-        throw { message: error?.data?.statusMessage || 'Request failed' }
+        const message =
+          error?.data?.message ||
+          error?.data?.statusMessage ||
+          error?.message ||
+          'Request failed'
+        throw new Error(message)
       }
     },
   },
